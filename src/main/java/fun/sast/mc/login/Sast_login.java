@@ -139,13 +139,25 @@ public class Sast_login implements ModInitializer {
     }
 
     public static void loadInfo() {
-        try (BufferedReader bufferedReader = Files.newReader(players, StandardCharsets.UTF_8)) {
-            users = gson.fromJson(bufferedReader, type);
-            map.clear();
-            if (users != null) {
-                map.putAll(users.stream().collect(Collectors.toMap(User::getUuid, player -> player)));
-            } else {
-                users = new ArrayList<>();
+        try {
+            if (!players.getParentFile().exists()) {
+                if (!players.getParentFile().mkdirs()) {
+                    throw new RuntimeException("Failed to create parent directories");
+                }
+            }
+            if (!players.exists()) {
+                try (Writer writer = new OutputStreamWriter(new FileOutputStream(players), StandardCharsets.UTF_8)) {
+                    writer.write("[]");
+                }
+            }
+            try (BufferedReader bufferedReader = Files.newReader(players, StandardCharsets.UTF_8)) {
+                users = gson.fromJson(bufferedReader, type);
+                map.clear();
+                if (users != null) {
+                    map.putAll(users.stream().collect(Collectors.toMap(User::getUuid, player -> player)));
+                } else {
+                    users = new ArrayList<>();
+                }
             }
         } catch (IOException e) {
             throw new RuntimeException(e);
