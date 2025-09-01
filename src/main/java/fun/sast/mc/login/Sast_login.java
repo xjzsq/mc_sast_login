@@ -62,6 +62,7 @@ public class Sast_login implements ModInitializer {
                 player.changeGameMode(GameMode.SPECTATOR);
                 ((PlayerAuth) player).sastLogin$sendAuthMessage();
             } else {
+				player.changeGameMode(GameMode.SURVIVAL);
                 ((PlayerAuth) player).sastLogin$setAuthenticated(true);
             }
         });
