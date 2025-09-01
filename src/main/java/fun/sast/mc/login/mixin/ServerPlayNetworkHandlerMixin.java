@@ -38,22 +38,22 @@ public abstract class ServerPlayNetworkHandlerMixin {
         }
     }
 
-    @Inject(
-            method = "onPlayerAction(Lnet/minecraft/network/packet/c2s/play/PlayerActionC2SPacket;)V",
-            at = @At(
-                    value = "INVOKE",
-                    target = "Lnet/minecraft/network/NetworkThreadUtils;forceMainThread(Lnet/minecraft/network/packet/Packet;Lnet/minecraft/network/listener/PacketListener;Lnet/minecraft/server/world/ServerWorld;)V",
-                    shift = At.Shift.AFTER
-            ),
-            cancellable = true
-    )
-    private void onPlayerAction(PlayerActionC2SPacket packet, CallbackInfo ci) {
-        if (packet.getAction() == SWAP_ITEM_WITH_OFFHAND) {
-            if (!((PlayerAuth) player).sastLogin$isAuthenticated()) {
-                ci.cancel();
-            }
-        }
-    }
+    // @Inject(
+    //         method = "onPlayerAction(Lnet/minecraft/network/packet/c2s/play/PlayerActionC2SPacket;)V",
+    //         at = @At(
+    //                 value = "INVOKE",
+    //                 target = "Lnet/minecraft/network/NetworkThreadUtils;forceMainThread(Lnet/minecraft/network/packet/Packet;Lnet/minecraft/network/listener/PacketListener;Lnet/minecraft/server/world/ServerWorld;)V",
+    //                 shift = At.Shift.AFTER
+    //         ),
+    //         cancellable = true
+    // )
+    // private void onPlayerAction(PlayerActionC2SPacket packet, CallbackInfo ci) {
+    //     if (packet.getAction() == SWAP_ITEM_WITH_OFFHAND) {
+    //         if (!((PlayerAuth) player).sastLogin$isAuthenticated()) {
+    //             ci.cancel();
+    //         }
+    //     }
+    // }
 
     @Inject(
             method = "onPlayerMove(Lnet/minecraft/network/packet/c2s/play/PlayerMoveC2SPacket;)V",
