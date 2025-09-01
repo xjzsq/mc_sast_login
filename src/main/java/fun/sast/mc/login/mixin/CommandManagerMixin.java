@@ -15,9 +15,9 @@ public class CommandManagerMixin {
     private void checkCanUseCommands(ParseResults<ServerCommandSource> parseResults, String command, CallbackInfoReturnable<Integer> cir) {
         PlayerAuth player = (PlayerAuth) parseResults.getContext().getSource().getPlayer();
         if (player != null && !player.sastLogin$isAuthenticated()) {
-            if (!command.startsWith("bind")) {
-                player.sastLogin$isAuthenticated();
-                cir.setReturnValue(1);
+            if (!command.startsWith("bind ")) {
+                player.sastLogin$sendAuthMessage();
+                cir.setReturnValue(0);
             }
         }
     }
