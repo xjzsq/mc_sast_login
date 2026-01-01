@@ -3,13 +3,13 @@
 	"id": "sast_login",
 	"version": "${version}",
 	"name": "sast_login",
-	"description": "This is an example description! Tell everyone what your mod is about!",
+	"description": "使用 SAST 飞书 / SAST Link 登录 MC 服务器（MC 1.20.1 Fabric 服务端插件）",
 	"authors": [
-		"Me!"
+		"xjzsq"
 	],
 	"contact": {
-		"homepage": "https://fabricmc.net/",
-		"sources": "https://github.com/FabricMC/fabric-example-mod"
+		"homepage": "https://xjzsq.cn/",
+		"sources": "https://github.com/xjzsq/mc_sast_login"
 	},
 	"license": "CC0-1.0",
 	"icon": "assets/sast_login/icon.png",
@@ -19,6 +19,7 @@
 			"fun.sast.mc.login.Sast_login"
 		]
 	},
+    "accessWidener": "sast_login.accesswidener",
 	"mixins": [
 		"sast_login.mixins.json"
 	],
@@ -28,8 +29,5 @@
 		"java": ">=11",
 		"fabric-api": "*"
 	},
-	"suggests": {
-      "luckperms": "*",
-      "fabric-permissions-api-v0": "*"
-    }
+	"suggests": {}
 }

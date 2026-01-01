@@ -1,39 +1,26 @@
 package fun.sast.mc.login;
 
-import com.google.common.io.Files;
-import com.google.common.reflect.TypeToken;
 import com.google.gson.Gson;
 import com.sun.net.httpserver.HttpServer;
 import fun.sast.mc.login.utils.PlayerAuth;
+import fun.sast.mc.login.utils.PlayersInfo;
+import fun.sast.mc.login.utils.User;
+import fun.sast.mc.login.commands.*;
 import net.fabricmc.api.ModInitializer;
 
+import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
-import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
-import net.fabricmc.fabric.api.event.player.*;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
-import net.minecraft.entity.effect.StatusEffectInstance;
-import net.minecraft.entity.effect.StatusEffects;
-import net.minecraft.item.ItemStack;
 import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.util.ActionResult;
-import net.minecraft.util.TypedActionResult;
-import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.GameMode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.*;
-import java.lang.reflect.Type;
 import java.net.InetSocketAddress;
-import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.stream.Collectors;
 
-import static fun.sast.mc.login.config.Config.players;
-import static fun.sast.mc.login.config.Config.gson;
+import static fun.sast.mc.login.utils.PremiumChecker.isPremium;
 
 public class Sast_login implements ModInitializer {
 	public static final String MOD_ID = "sast_login";
@@ -42,10 +29,6 @@ public class Sast_login implements ModInitializer {
 	// It is considered best practice to use your mod id as the logger's name.
 	// That way, it's clear which mod wrote info, warnings, and errors.
 	public static final Logger LOGGER = LoggerFactory.getLogger(MOD_ID);
-    private static final ConcurrentHashMap<UUID, User> map = new ConcurrentHashMap<>();
-    private static List<User> users;
-    private static final Type type = new TypeToken<ArrayList<User>>() {}.getType();
-
 
 	@Override
 	public void onInitialize() {
@@ -53,55 +36,24 @@ public class Sast_login implements ModInitializer {
 		// However, some things (like resources) may still be uninitialized.
 		// Proceed with mild caution.
 
-        loadInfo();
+        PlayersInfo.initialize();
+
+        CommandRegistrationCallback.EVENT.register((dispatcher, dedicated, environment) -> {
+            BindCommand.registerCommand(dispatcher);
+            MigrateCommand.registerCommand(dispatcher);
+        });
 
         ServerPlayConnectionEvents.JOIN.register((handler, sender, server) -> {
             ServerPlayerEntity player = handler.getPlayer();
             UUID uuid = player.getUuid();
-            if (map.get(uuid) == null) {
+            if (PlayersInfo.get(uuid) == null) {
                 player.changeGameMode(GameMode.SPECTATOR);
                 ((PlayerAuth) player).sastLogin$sendAuthMessage();
             } else {
-				player.changeGameMode(GameMode.SURVIVAL);
+                player.changeGameMode(GameMode.SURVIVAL);
                 ((PlayerAuth) player).sastLogin$setAuthenticated(true);
             }
         });
-
-//        PlayerBlockBreakEvents.BEFORE.register((world, playerEntity, blockPos, blockState, blockEntity) -> {
-//            if (!((PlayerAuth) playerEntity).sastLogin$isAuthenticated()) {
-//                ((PlayerAuth) playerEntity).sastLogin$sendAuthMessage();
-//                return false;
-//            }
-//            return true;
-//        });
-//        UseBlockCallback.EVENT.register((playerEntity, world, hand, blockHitResult) -> {
-//            if (!((PlayerAuth) playerEntity).sastLogin$isAuthenticated()) {
-//                ((PlayerAuth) playerEntity).sastLogin$sendAuthMessage();
-//                return ActionResult.FAIL;
-//            }
-//            return ActionResult.PASS;
-//        });
-//        UseItemCallback.EVENT.register((playerEntity, world, hand) -> {
-//            if (!((PlayerAuth) playerEntity).sastLogin$isAuthenticated()) {
-//                ((PlayerAuth) playerEntity).sastLogin$sendAuthMessage();
-//                return TypedActionResult.fail(ItemStack.EMPTY);
-//            }
-//            return TypedActionResult.pass(playerEntity.getStackInHand(hand));
-//        });
-//        AttackEntityCallback.EVENT.register((playerEntity, world, hand, entity, entityHitResult) -> {
-//            if (!((PlayerAuth) playerEntity).sastLogin$isAuthenticated()) {
-//                ((PlayerAuth) playerEntity).sastLogin$sendAuthMessage();
-//                return ActionResult.FAIL;
-//            }
-//            return ActionResult.PASS;
-//        });
-//        UseEntityCallback.EVENT.register((playerEntity, world, hand, entity, entityHitResult) -> {
-//            if (!((PlayerAuth) playerEntity).sastLogin$isAuthenticated()) {
-//                ((PlayerAuth) playerEntity).sastLogin$sendAuthMessage();
-//                return ActionResult.FAIL;
-//            }
-//            return ActionResult.PASS;
-//        });
 
         ServerLifecycleEvents.SERVER_STARTED.register(server -> {
             try {
@@ -113,66 +65,39 @@ public class Sast_login implements ModInitializer {
                     LOGGER.info("Received request: {}", request);
                     Gson gson = new Gson();
                     User user = gson.fromJson(request, User.class);
-                    if (!map.containsKey(user.getUuid())) {
-                        map.put(user.getUuid(), user);
-                        users.add(user);
-                        saveInfo();
-                        LOGGER.info("User {} has been created", user.getUuid());
-                        ServerPlayerEntity player = server.getPlayerManager().getPlayer(user.getUuid());
-                        if (player != null) {
-                            ((PlayerAuth) player).sastLogin$sendAuthOKMessage();
-                            ((PlayerAuth) player).sastLogin$setAuthenticated(true);
-                            player.changeGameMode(GameMode.SURVIVAL);
+                    ServerPlayerEntity player = server.getPlayerManager().getPlayer(user.getUuid());
+                    if (player != null) {
+                        boolean isPremium = isPremium(player);
+                        if (!PlayersInfo.exist(user.getUuid()) && isPremium) {
+                            PlayersInfo.put(user.getUuid(), user);
+                            LOGGER.info("User {} created", user.getUuid());
                         }
+                        player.changeGameMode(GameMode.SURVIVAL);
+                        if (isPremium) {
+                            ((PlayerAuth) player).sastLogin$sendPremiumAuthOKMessage();
+                        } else {
+                            ((PlayerAuth) player).sastLogin$sendAuthOKMessage();
+                        }
+                        ((PlayerAuth) player).sastLogin$setAuthenticated(true);
+                        String response = "ok";
+                        exchange.sendResponseHeaders(200, response.length());
+                        OutputStream os = exchange.getResponseBody();
+                        os.write(response.getBytes());
+                        os.close();
+                    } else {
+                        String response = "player not online";
+                        exchange.sendResponseHeaders(400, response.length());
+                        OutputStream os = exchange.getResponseBody();
+                        os.write(response.getBytes());
+                        os.close();
                     }
 
-                    String response = "ok";
-                    exchange.sendResponseHeaders(200, response.length());
-                    OutputStream os = exchange.getResponseBody();
-                    os.write(response.getBytes());
-                    os.close();
                 });
                 _server.start();
             } catch (IOException e) {
                 throw new RuntimeException(e);
             }
         });
-    }
-
-    public static void loadInfo() {
-        try {
-            if (!players.getParentFile().exists()) {
-                if (!players.getParentFile().mkdirs()) {
-                    throw new RuntimeException("Failed to create parent directories");
-                }
-            }
-            if (!players.exists()) {
-                try (Writer writer = new OutputStreamWriter(new FileOutputStream(players), StandardCharsets.UTF_8)) {
-                    writer.write("[]");
-                }
-            }
-            try (BufferedReader bufferedReader = Files.newReader(players, StandardCharsets.UTF_8)) {
-                users = gson.fromJson(bufferedReader, type);
-                map.clear();
-                if (users != null) {
-                    map.putAll(users.stream().collect(Collectors.toMap(User::getUuid, player -> player)));
-                } else {
-                    users = new ArrayList<>();
-                }
-            }
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
-    }
-
-    public static void saveInfo() {
-        try (BufferedWriter bufferedWriter = Files.newWriter(players, StandardCharsets.UTF_8)) {
-            users.clear();
-            users.addAll(map.values().stream().toList());
-            bufferedWriter.write(gson.toJson(users));
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
     }
 
 }

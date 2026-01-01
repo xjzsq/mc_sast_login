@@ -5,4 +5,5 @@ public interface PlayerAuth {
     void sastLogin$setAuthenticated(boolean authenticated);
     void sastLogin$sendAuthMessage();
     void sastLogin$sendAuthOKMessage();
+    void sastLogin$sendPremiumAuthOKMessage();
 }

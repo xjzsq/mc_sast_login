@@ -1,4 +1,4 @@
-package fun.sast.mc.login;
+package fun.sast.mc.login.utils;
 
 import java.util.UUID;
 

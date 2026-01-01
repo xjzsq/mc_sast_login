@@ -2,8 +2,6 @@ package fun.sast.mc.login.mixin;
 
 import fun.sast.mc.login.utils.PlayerAuth;
 import net.fabricmc.fabric.mixin.dimension.EntityMixin;
-import net.minecraft.entity.effect.StatusEffectInstance;
-import net.minecraft.entity.effect.StatusEffects;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.text.ClickEvent;
 import net.minecraft.text.Text;
@@ -37,14 +35,19 @@ public abstract class ServerPlayerEntityMixin extends EntityMixin implements Pla
 
     @Override
     public void sastLogin$sendAuthMessage() {
-        player.sendMessage(Text.literal("您的 UUID 尚未绑定第三方平台 ID。请访问以下链接进行绑定：").append(Text.literal(oauthBaseUrl + player.getUuid().toString())
+        player.sendMessage(Text.literal("您的 UUID 尚未验证第三方平台 ID，请访问以下链接进行验证：").append(Text.literal(oauthBaseUrl + player.getUuid().toString())
                 .styled(style -> style.withClickEvent(new ClickEvent(ClickEvent.Action.OPEN_URL, oauthBaseUrl + player.getUuid().toString()))
                         .withUnderline(true))), false);
     }
 
     @Override
     public void sastLogin$sendAuthOKMessage() {
-        player.sendMessage(Text.literal("绑定成功！Enjoy it~"));
+        player.sendMessage(Text.literal("验证成功！Enjoy your game~"));
+    }
+
+    public void sastLogin$sendPremiumAuthOKMessage() {
+        player.sendMessage(Text.literal("验证并绑定成功！Enjoy your game~"));
+        player.sendMessage(Text.literal("可通过 /migrate <离线用户名> 命令迁移离线数据到当前账号"));
     }
 
     @Inject(method = "copyFrom(Lnet/minecraft/server/network/ServerPlayerEntity;Z)V", at = @At("RETURN"))
