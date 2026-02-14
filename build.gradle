@@ -10,7 +10,7 @@ def minecraftVersion = stonecutter.current.version
 def accesswidener = "sast_login.${minecraftVersion}.accesswidener"
 
 base {
-	archivesName = project.archives_base_name
+	archivesName = "${project.archives_base_name}-mc${minecraftVersion}"
 }
 
 repositories {
@@ -77,7 +77,7 @@ jar {
 publishing {
 	publications {
 		create("mavenJava", MavenPublication) {
-			artifactId = project.archives_base_name
+			artifactId = base.archivesName
 			from components.java
 		}
 	}
