@@ -65,6 +65,15 @@ public class Sast_login implements ModInitializer {
                     LOGGER.info("Received request: {}", request);
                     Gson gson = new Gson();
                     User user = gson.fromJson(request, User.class);
+                    if (user == null || user.getUuid() == null || (user.getSast_id() == null && user.getFeishu_id() == null)) {
+                        LOGGER.error("Invalid request, uuid: {}, sast_id: {}, feishu_id: {}", user == null ? null : user.getUuid(), user == null ? null : user.getSast_id(), user == null ? null : user.getFeishu_id());
+                        String response = "invalid request";
+                        exchange.sendResponseHeaders(400, response.length());
+                        OutputStream os = exchange.getResponseBody();
+                        os.write(response.getBytes());
+                        os.close();
+                        return;
+                    }
                     ServerPlayerEntity player = server.getPlayerManager().getPlayer(user.getUuid());
                     if (player != null) {
                         boolean isPremium = isPremium(player);

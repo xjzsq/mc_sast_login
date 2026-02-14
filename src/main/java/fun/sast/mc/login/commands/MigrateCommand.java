@@ -55,6 +55,13 @@ public class MigrateCommand {
             return 0;
         }
 
+        final MinecraftServer server = source.getServer();
+
+        if (!PlayerDataMigration.canMigrate(server, offlineUsername)) {
+            source.sendError(Text.literal("离线用户名 " + offlineUsername + " 不存在或没有可迁移的数据"));
+            return 0;
+        }
+
         Text kickReason = Text.literal("正在进行账号迁移，请稍作等待后重新登录...");
 
         try {
@@ -65,9 +72,14 @@ public class MigrateCommand {
             source.sendFeedback(() -> Text.literal("Failed to disconnect player: " + e.getMessage()), false);
         }
 
-        source.sendFeedback(() -> Text.literal("Migrating data from offline username: " + offlineUsername + " to current account: " + player.getGameProfile().getName()), false);
+        source.sendFeedback(() -> Text.literal("Migrating data from offline username: " + offlineUsername + " to current account: " +
+                //? if < 1.21.5 {
+                /*player.getGameProfile().getName())
+                *///? } else {
+                 player.getName().getString())
+                 //?}
+                , false);
 
-        final MinecraftServer server = source.getServer();
         final UUID onlineUuid = player.getUuid();
         final AtomicBoolean stillOnline = new AtomicBoolean(true);
 

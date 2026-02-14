@@ -50,24 +50,7 @@ public class BindCommand {
     private static int bind(ServerCommandSource source, String token) throws IOException {
         token = token == null ? "" : token.trim();
         if (token.isEmpty()) {
-            source.sendMessage(Text.literal("Invalid token: empty"));
-            return 0;
-        }
-
-        JwtVerifier.Result res = verifier.verify(token);
-        if (!res.ok) {
-            source.sendMessage(Text.literal("Token error: " + res.error));
-            return 0;
-        }
-
-        DecodedJWT jwt = res.jwt;
-        String uuidClaim = jwt.getClaim("uuid").asString();
-        String type = jwt.getClaim("type").asString();
-        String userId = jwt.getClaim("user_id").asString();
-        String name = jwt.getClaim("name").asString();
-
-        if (uuidClaim == null || type == null || userId == null) {
-            source.sendMessage(Text.literal("Invalid token: missing required claims (uuid,type,user_id)"));
+            source.sendMessage(Text.literal("绑定失败：token 不能为空！"));
             return 0;
         }
 
@@ -78,20 +61,40 @@ public class BindCommand {
             source.sendMessage(Text.literal("Command must be run by a player"));
             return 0;
         }
-
         if (player == null) {
             source.sendMessage(Text.literal("Command must be run by a player"));
             return 0;
         }
 
         UUID playerUuid = player.getUuid();
-        if (!playerUuid.toString().equals(uuidClaim)) {
-            source.sendMessage(Text.literal("Token UUID does not match your player UUID"));
+        if (((PlayerAuth) player).sastLogin$isAuthenticated()) {
+            LOGGER.info("Player {} is already authenticated, no need to bind again", playerUuid);
+            source.sendMessage(Text.literal("绑定失败：已绑定过账号，无需重复绑定"));
             return 0;
         }
 
-        if (((PlayerAuth) player).sastLogin$isAuthenticated()) {
-            source.sendMessage(Text.literal("You are already authenticated, no need to bind again"));
+        JwtVerifier.Result res = verifier.verify(token);
+        if (!res.ok) {
+            LOGGER.info("Token error: {}", res.error);
+            source.sendMessage(Text.literal("绑定失败：" + res.error));
+            return 0;
+        }
+
+        DecodedJWT jwt = res.jwt;
+        String uuidClaim = jwt.getClaim("uuid").asString();
+        String type = jwt.getClaim("type").asString();
+        String userId = jwt.getClaim("user_id").asString();
+        String name = jwt.getClaim("name").asString();
+
+        if (uuidClaim == null || type == null || userId == null) {
+            LOGGER.info("Invalid token: missing required claims (uuid,type,user_id)");
+            source.sendMessage(Text.literal("绑定失败：token 缺少必要的字段 (uuid,type,user_id)"));
+            return 0;
+        }
+
+        if (!playerUuid.toString().equals(uuidClaim)) {
+            LOGGER.info("Token UUID does not match player UUID: token {}, player {}", uuidClaim, playerUuid);
+            source.sendMessage(Text.literal("绑定失败：token 中的 UUID 与当前玩家不匹配"));
             return 0;
         }
 
@@ -108,7 +111,8 @@ public class BindCommand {
                 user.setSast_name(name);
                 break;
             default:
-                source.sendMessage(Text.literal("Unknown token type: " + type));
+                LOGGER.info("Invalid token type: {}", type);
+                source.sendMessage(Text.literal("绑定失败：未知的 type 字段（"+ type +"）"));
                 return 0;
         }
 
@@ -125,7 +129,7 @@ public class BindCommand {
             ((PlayerAuth) player).sastLogin$sendAuthOKMessage();
         }
         ((PlayerAuth) player).sastLogin$setAuthenticated(true);
-        source.sendMessage(Text.literal("Bind successful: linked to " + type + " account " + name + " (id: " + userId + ")"));
+        source.sendMessage(Text.literal("绑定成功：已绑定到 " + type + " 账号 " + name + "（id: " + userId + "）"));
         return 1;
     }
 }

@@ -6,6 +6,9 @@ plugins {
 version = project.mod_version
 group = project.maven_group
 
+def minecraftVersion = stonecutter.current.version
+def accesswidener = "sast_login.${minecraftVersion}.accesswidener"
+
 base {
 	archivesName = project.archives_base_name
 }
@@ -19,7 +22,7 @@ repositories {
 }
 
 loom {
-    accessWidenerPath = file("src/main/resources/sast_login.accesswidener")
+    accessWidenerPath = getRootProject().file("src/main/resources/accesswideners/${accesswidener}")
 }
 
 dependencies {
@@ -40,7 +43,11 @@ processResources {
 	inputs.property "version", project.version
 
 	filesMatching("fabric.mod.json") {
-		expand "version": inputs.properties.version
+		expand([
+				version: inputs.properties.version,
+				aw_file: accesswidener,
+				minecraft_version: minecraftVersion
+		])
 	}
 }
 

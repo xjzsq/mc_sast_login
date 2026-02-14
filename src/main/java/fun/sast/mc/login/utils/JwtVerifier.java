@@ -77,32 +77,34 @@ public class JwtVerifier {
     }
 
     public Result verify(String token) {
-        if (token == null || token.trim().isEmpty()) return Result.fail("empty token");
+        if (token == null || token.trim().isEmpty()) return Result.fail("token 不能为空！");
         token = token.trim();
         // check replay
         String hash = sha256Hex(token);
         long now = System.currentTimeMillis();
         cleanup(now);
         if (usedTokens.containsKey(hash)) {
-            return Result.fail("token already used");
+            Sast_login.LOGGER.info("JWT token has been used before, token: {}", token);
+            return Result.fail("token 已被使用！");
         }
 
         // Try multiple verification strategies but only mark token used after success
         DecodedJWT jwt = tryVerifyWithPrimary(token);
         if (jwt != null) {
             usedTokens.put(hash, now);
+            Sast_login.LOGGER.info("JWT token verified successfully, token: {}", token);
             return Result.ok(jwt);
         }
 
-
-        return Result.fail("verification failed: signature invalid (all strategies)");
+        Sast_login.LOGGER.info("JWT token verification failed, token: {}", token);
+        return Result.fail("token 验证失败！");
     }
 
     private DecodedJWT tryVerifyWithPrimary(String token) {
         try {
-            Sast_login.LOGGER.info("token: {}", token);
             return verifier.verify(token);
         } catch (Exception e) {
+            Sast_login.LOGGER.error("JWT token verification failed, token: {}, error: {}", token, e.getMessage());
             return null;
         }
     }

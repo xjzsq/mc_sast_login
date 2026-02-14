@@ -12,7 +12,11 @@ public class PremiumChecker {
      * @return true = 正版（UUID != Offline UUID），false = 破解
      */
     public static boolean isPremium(ServerPlayerEntity player) throws IOException {
-        String username = player.getGameProfile().getName(); // 获取用户名
+        //? if < 1.21.5 {
+        /*String username = player.getGameProfile().getName(); // 获取用户名
+        *///? } else {
+        String username = player.getName().getString(); // 获取用户名
+        //?}
         UUID onlineUuid = getUuid(username);
         return player.getUuid().equals(onlineUuid);
     }
