@@ -55,6 +55,14 @@ tasks.withType(JavaCompile).configureEach {
 	it.options.release = 17
 }
 
+tasks.register("collectJars", Copy) {
+	dependsOn build
+
+	from tasks.named("remapJar").flatMap { it.archiveFile }
+
+	into rootProject.layout.buildDirectory.dir("libs")
+}
+
 java {
 	// Loom will automatically attach sourcesJar to a RemapSourcesJar task and to the "build" task
 	// if it is present.
