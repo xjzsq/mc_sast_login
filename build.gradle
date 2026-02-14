@@ -35,8 +35,14 @@ dependencies {
 	modImplementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_version}"
 	
 	// JWT verification library used to validate tokens issued by the Egg.js server
-	implementation 'com.auth0:java-jwt:4.4.0'
-
+	modImplementation "com.auth0:java-jwt:4.4.0"
+	include "com.auth0:java-jwt:4.4.0"
+	modImplementation "com.fasterxml.jackson.core:jackson-databind:2.14.2"
+	include "com.fasterxml.jackson.core:jackson-databind:2.14.2"
+	modImplementation "com.fasterxml.jackson.core:jackson-core:2.14.2"
+	include "com.fasterxml.jackson.core:jackson-core:2.14.2"
+	modImplementation "com.fasterxml.jackson.core:jackson-annotations:2.14.2"
+	include "com.fasterxml.jackson.core:jackson-annotations:2.14.2"
 }
 
 processResources {
